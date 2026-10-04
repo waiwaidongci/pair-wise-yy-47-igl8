@@ -1,5 +1,4 @@
 import { useMemo, useState } from 'react'
-import axios from 'axios'
 import {
   Button,
   DatePicker,
@@ -32,6 +31,7 @@ export default function IssuesPage() {
   const saveFilter = useWorkspaceStore((state) => state.saveFilter)
   const removeFilter = useWorkspaceStore((state) => state.removeFilter)
   const mergeIssues = useWorkspaceStore((state) => state.mergeIssues)
+  const bulkAssign = useWorkspaceStore((state) => state.bulkAssign)
   const [filters, setFilters] = useState({ query: '', site: '', status: '', priority: '' })
   const [detail, setDetail] = useState<Issue | null>(null)
   const [assignOpen, setAssignOpen] = useState(false)
@@ -65,6 +65,7 @@ export default function IssuesPage() {
     { title: '优先级', dataIndex: 'priority', width: 76, render: (value) => <Tag>{value}</Tag> },
     { title: '团队 / 负责人', dataIndex: 'team', width: 160, render: (_, record) => <div>{record.team}<br /><Typography.Text type="secondary">{record.owner}</Typography.Text></div> },
     { title: '状态', dataIndex: 'status', width: 95, render: (value) => <Tag color={statusColor[value]}>{value}</Tag> },
+    { title: '修订', dataIndex: 'rev', width: 70, render: (value: number) => <Tag>r{value}</Tag> },
     { title: '截止', dataIndex: 'dueDate', width: 105 },
     { title: '', width: 76, fixed: 'right', render: (_, record) => <Button type="link" onClick={() => setDetail(record)}>详情</Button> },
   ]
@@ -125,7 +126,7 @@ export default function IssuesPage() {
       <Drawer title={detail ? `${detail.key} · ${detail.title}` : ''} open={Boolean(detail)} onClose={() => setDetail(null)} width={560}>
         {detail && (
           <Space direction="vertical" size={18} style={{ width: '100%' }}>
-            <Space wrap><Tag color={impactColor[detail.impact]}>{detail.impact}</Tag><Tag>{detail.priority}</Tag><Tag color={statusColor[detail.status]}>{detail.status}</Tag></Space>
+            <Space wrap><Tag color={impactColor[detail.impact]}>{detail.impact}</Tag><Tag>{detail.priority}</Tag><Tag color={statusColor[detail.status]}>{detail.status}</Tag><Tag>r{detail.rev}</Tag></Space>
             <dl className="detail-list">
               <dt>站点版本</dt><dd>{detail.site} / {detail.version}</dd>
               <dt>WCAG</dt><dd>{detail.wcag.join('、')}</dd>
@@ -147,11 +148,10 @@ export default function IssuesPage() {
 
       <Modal title="批量分配整改项" open={assignOpen} onCancel={() => setAssignOpen(false)} onOk={() => form.submit()} okText="确认分配">
         <Form form={form} layout="vertical" onFinish={async (values) => {
-          await axios.post('/api/issues/bulk-assign', { keys: selectedKeys, ...values, dueDate: values.dueDate.format('YYYY-MM-DD') })
-          message.success(`已分配 ${selectedKeys.length} 条问题`)
+          bulkAssign(selectedKeys, values.team, values.owner, values.dueDate.format('YYYY-MM-DD'), values.priority)
+          message.success(`已分配 ${selectedKeys.length} 条问题，修订号已更新`)
           setSelectedKeys([])
           setAssignOpen(false)
-          window.location.reload()
         }}>
           <Form.Item name="team" label="目标团队" rules={[{ required: true }]}><Select options={['前端基础组件组', '结算体验组', '数据可视化组', '供应链前端组'].map((value) => ({ value }))} /></Form.Item>
           <Form.Item name="owner" label="负责人" rules={[{ required: true }]}><Input placeholder="输入负责人姓名" /></Form.Item>

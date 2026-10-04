@@ -22,4 +22,39 @@ export type Issue = {
   retestEnv?: string
   retestRecords: Array<{ id: string; actor: string; result: string; note: string; at: string }>
   history: Array<{ at: string; actor: string; action: string; detail: string }>
+  /** 修订号：每次修改自增，发布批次据此检测冲突 */
+  rev: number
+}
+
+/** 批次项可重放的变更字段 */
+export type BatchItemChange = {
+  status?: IssueStatus
+  fixNote?: string
+  retestEnv?: string
+}
+
+export type BatchItemStatus = 'pending' | 'replayed' | 'conflict'
+
+export type BatchItem = {
+  key: string
+  field: string
+  baseline: string
+  candidate: string
+  change: BatchItemChange
+  /** 暂存时问题的修订号，发布时与此比较以检测外部修改 */
+  baseRev: number
+  status: BatchItemStatus
+}
+
+export type ReleaseBatchStatus = 'staged' | 'released'
+
+export type ReleaseBatch = {
+  id: string
+  name: string
+  createdAt: string
+  status: ReleaseBatchStatus
+  items: BatchItem[]
+  releasedAt?: string
+  /** 最近一次发布失败的信息（用于重试提示） */
+  lastError?: string
 }

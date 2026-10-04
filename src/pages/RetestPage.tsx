@@ -27,6 +27,7 @@ export default function RetestPage() {
     { title: '问题', dataIndex: 'key', render: (_, record) => <div><Typography.Text strong>{record.key}</Typography.Text><div>{record.title}</div></div> },
     { title: '修复说明', dataIndex: 'fixNote', width: 260, render: (value) => value ?? '未提交' },
     { title: '环境', dataIndex: 'retestEnv', width: 200, render: (value) => value ?? '待开发提交' },
+    { title: '修订', dataIndex: 'rev', width: 70, render: (value: number) => <Tag>r{value}</Tag> },
     { title: '状态', dataIndex: 'status', width: 90, render: (value) => <Tag color={value === '已退回' ? 'error' : 'orange'}>{value}</Tag> },
   ]
 
@@ -50,7 +51,7 @@ export default function RetestPage() {
         </div>
 
         <div className="panel review-box">
-          <Typography.Title level={4}>{active?.key ?? '暂无可复测项'}</Typography.Title>
+          <Typography.Title level={4}>{active?.key ?? '暂无可复测项'} {active && <Tag>r{active.rev}</Tag>}</Typography.Title>
           {active && (
             <>
               <Descriptions size="small" column={1} bordered>

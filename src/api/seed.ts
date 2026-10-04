@@ -26,6 +26,7 @@ export const seedIssues: Issue[] = [
     mergedKeys: ['A11Y-1052', 'A11Y-1061'],
     retestRecords: [],
     history: commonHistory('筛选抽屉键盘陷阱'),
+    rev: 1,
   },
   {
     key: 'A11Y-1052',
@@ -49,6 +50,7 @@ export const seedIssues: Issue[] = [
     retestEnv: 'Chrome 140 / VoiceOver / 商城 v4.18.3',
     retestRecords: [{ id: 'RT-22', actor: '苏禾', result: '通过', note: '焦点返回触发按钮，顺序正确。', at: '09-28 14:20' }],
     history: commonHistory('客服弹窗焦点恢复'),
+    rev: 1,
   },
   {
     key: 'A11Y-1061',
@@ -70,6 +72,7 @@ export const seedIssues: Issue[] = [
     mergedKeys: [],
     retestRecords: [],
     history: commonHistory('优惠券选择层键盘循环'),
+    rev: 1,
   },
   {
     key: 'A11Y-1074',
@@ -93,6 +96,7 @@ export const seedIssues: Issue[] = [
     retestEnv: 'Safari 26 / 对比度工具 / admin-v2.7.5',
     retestRecords: [],
     history: commonHistory('图表颜色对比度'),
+    rev: 1,
   },
   {
     key: 'A11Y-1083',
@@ -115,5 +119,6 @@ export const seedIssues: Issue[] = [
     fixNote: '计划仅增加视觉错误颜色。',
     retestRecords: [{ id: 'RT-31', actor: '李予', result: '退回', note: '仍需接入 aria-live，并验证字段 aria-describedby。', at: '09-28 11:05' }],
     history: commonHistory('表单错误提示'),
+    rev: 1,
   },
 ]
