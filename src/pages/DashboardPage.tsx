@@ -2,16 +2,15 @@ import { Button, Progress, Space, Tag, Typography } from 'antd'
 import { ArrowRightOutlined, CheckCircleOutlined, ClockCircleOutlined, ExclamationCircleOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import { useIssues } from '../api/useIssues'
-import { useWorkspaceStore } from '../store/useWorkspaceStore'
 
 export default function DashboardPage() {
-  useIssues()
-  const issues = useWorkspaceStore((state) => state.issues)
+  const issuesQuery = useIssues()
+  const issues = issuesQuery.data ?? []
   const navigate = useNavigate()
   const open = issues.filter((item) => !['已通过', '不适用'].includes(item.status))
   const passed = issues.filter((item) => item.status === '已通过').length
   const critical = issues.filter((item) => item.impact === '致命' || item.impact === '严重').length
-  const coverage = Math.round((passed / issues.length) * 100)
+  const coverage = issues.length ? Math.round((passed / issues.length) * 100) : 0
   const bySite = Array.from(new Set(issues.map((item) => item.site))).map((site) => {
     const items = issues.filter((issue) => issue.site === site)
     return { site, total: items.length, passed: items.filter((item) => item.status === '已通过').length }
@@ -48,7 +47,7 @@ export default function DashboardPage() {
                   <Typography.Text strong>{item.site}</Typography.Text>
                   <Typography.Text type="secondary">{item.passed}/{item.total} 已通过</Typography.Text>
                 </div>
-                <Progress percent={Math.round((item.passed / item.total) * 100)} showInfo={false} strokeColor="#257c80" />
+                <Progress percent={item.total ? Math.round((item.passed / item.total) * 100) : 0} showInfo={false} strokeColor="#257c80" />
               </div>
             ))}
           </div>

@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite --host 0.0.0.0 --port 62047",
     "build": "tsc -b && vite build",
-    "preview": "vite preview --host 0.0.0.0 --port 62047"
+    "preview": "vite preview --host 0.0.0.0 --port 62047",
+    "test:server": "esbuild scripts/server-e2e.mjs --bundle --platform=node --format=esm --outfile=node_modules/.cache/server-e2e.bundle.mjs --log-level=warning && node node_modules/.cache/server-e2e.bundle.mjs"
   },
   "dependencies": {
     "@ant-design/icons": "^6.0.0",

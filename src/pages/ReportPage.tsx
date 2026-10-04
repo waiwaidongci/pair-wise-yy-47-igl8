@@ -2,15 +2,15 @@ import { useState } from 'react'
 import { Button, Checkbox, Select, Space, Tag, Typography, message } from 'antd'
 import { DownloadOutlined, FilePdfOutlined } from '@ant-design/icons'
 import { useIssues } from '../api/useIssues'
-import { useWorkspaceStore } from '../store/useWorkspaceStore'
 
 export default function ReportPage() {
-  useIssues()
-  const issues = useWorkspaceStore((state) => state.issues)
+  const issuesQuery = useIssues()
+  const issues = issuesQuery.data ?? []
   const [site, setSite] = useState('全部站点')
   const [includeEvidence, setIncludeEvidence] = useState(true)
   const [includeHistory, setIncludeHistory] = useState(true)
   const visible = issues.filter((item) => site === '全部站点' || item.site === site)
+  const revisionStamp = Math.max(0, ...issues.map((item) => item.revision))
 
   const exportCsv = () => {
     const rows = [
@@ -53,10 +53,15 @@ export default function ReportPage() {
       <article className="panel report-sheet">
         <header style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '3px solid #173e4d', paddingBottom: 16 }}>
           <div><Typography.Text type="secondary">数字体验无障碍治理项目</Typography.Text><h2>网站无障碍整改报告</h2><Typography.Text>生成日期：2026-09-29 · WCAG 2.2 AA</Typography.Text></div>
-          <div style={{ textAlign: 'right' }}><Tag color="blue">{site}</Tag><div>问题 {visible.length} 项</div><div>通过 {visible.filter((item) => item.status === '已通过').length} 项</div></div>
+          <div style={{ textAlign: 'right' }}>
+            <Tag color="blue">{site}</Tag>
+            <div>问题 {visible.length} 项</div>
+            <div>通过 {visible.filter((item) => item.status === '已通过').length} 项</div>
+            <div>修订口径 r{revisionStamp}（与台账、复测队列一致）</div>
+          </div>
         </header>
         <table>
-          <thead><tr><th>编号</th><th>页面 / 范围</th><th>问题与 WCAG</th><th>影响</th><th>状态 / 责任</th><th>截止</th></tr></thead>
+          <thead><tr><th>编号</th><th>页面 / 范围</th><th>问题与 WCAG</th><th>影响</th><th>状态 / 责任</th><th>修订</th><th>截止</th></tr></thead>
           <tbody>
             {visible.map((issue) => (
               <tr key={issue.key}>
@@ -65,6 +70,7 @@ export default function ReportPage() {
                 <td><strong>{issue.title}</strong><br />{issue.wcag.join(' / ')}{includeEvidence && <><br /><Typography.Link href={issue.evidence}>查看证据</Typography.Link></>}</td>
                 <td><Tag color={issue.impact === '致命' ? 'red' : issue.impact === '严重' ? 'volcano' : 'gold'}>{issue.impact}</Tag></td>
                 <td>{issue.status}<br />{issue.team} / {issue.owner}</td>
+                <td>r{issue.revision}{issue.lastBatchId ? <><br /><Typography.Text type="secondary">{issue.lastBatchId}</Typography.Text></> : null}</td>
                 <td>{issue.dueDate}</td>
               </tr>
             ))}

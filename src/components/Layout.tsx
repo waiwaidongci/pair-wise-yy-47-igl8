@@ -9,6 +9,7 @@ import {
   FileDoneOutlined,
   MenuOutlined,
 } from '@ant-design/icons'
+import { useServerSync } from '../api/useIssues'
 
 const items = [
   { key: '/', icon: <AppstoreOutlined />, label: <NavLink to="/">整改总览</NavLink> },
@@ -20,6 +21,7 @@ const items = [
 
 export default function AppLayout() {
   const [open, setOpen] = useState(false)
+  useServerSync()
   const sidebar = (
     <div className="sidebar-inner">
       <div className="brand">

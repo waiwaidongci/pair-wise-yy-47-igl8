@@ -15,8 +15,9 @@ import {
   message,
 } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
+import { useQueryClient } from '@tanstack/react-query'
 import { FilterOutlined, MergeCellsOutlined, SaveOutlined, TeamOutlined } from '@ant-design/icons'
-import { useIssues } from '../api/useIssues'
+import { issuesQueryKey, useIssues, useMergeIssues } from '../api/useIssues'
 import { useWorkspaceStore } from '../store/useWorkspaceStore'
 import type { Issue } from '../api/types'
 
@@ -24,14 +25,15 @@ const impactColor: Record<string, string> = { 致命: 'red', 严重: 'volcano', 
 const statusColor: Record<string, string> = { 待分配: 'default', 修复中: 'processing', 待复测: 'orange', 已通过: 'success', 已退回: 'error', 不适用: 'default' }
 
 export default function IssuesPage() {
-  useIssues()
-  const issues = useWorkspaceStore((state) => state.issues)
+  const issuesQuery = useIssues()
+  const issues = issuesQuery.data ?? []
+  const mergeMutation = useMergeIssues()
+  const queryClient = useQueryClient()
   const selectedKeys = useWorkspaceStore((state) => state.selectedKeys)
   const setSelectedKeys = useWorkspaceStore((state) => state.setSelectedKeys)
   const savedFilters = useWorkspaceStore((state) => state.savedFilters)
   const saveFilter = useWorkspaceStore((state) => state.saveFilter)
   const removeFilter = useWorkspaceStore((state) => state.removeFilter)
-  const mergeIssues = useWorkspaceStore((state) => state.mergeIssues)
   const [filters, setFilters] = useState({ query: '', site: '', status: '', priority: '' })
   const [detail, setDetail] = useState<Issue | null>(null)
   const [assignOpen, setAssignOpen] = useState(false)
@@ -65,6 +67,14 @@ export default function IssuesPage() {
     { title: '优先级', dataIndex: 'priority', width: 76, render: (value) => <Tag>{value}</Tag> },
     { title: '团队 / 负责人', dataIndex: 'team', width: 160, render: (_, record) => <div>{record.team}<br /><Typography.Text type="secondary">{record.owner}</Typography.Text></div> },
     { title: '状态', dataIndex: 'status', width: 95, render: (value) => <Tag color={statusColor[value]}>{value}</Tag> },
+    {
+      title: '修订',
+      dataIndex: 'revision',
+      width: 72,
+      render: (value, record) => (
+        <TooltipRevision revision={value} batchId={record.lastBatchId} />
+      ),
+    },
     { title: '截止', dataIndex: 'dueDate', width: 105 },
     { title: '', width: 76, fixed: 'right', render: (_, record) => <Button type="link" onClick={() => setDetail(record)}>详情</Button> },
   ]
@@ -83,10 +93,10 @@ export default function IssuesPage() {
         <div>
           <p className="eyebrow">ISSUE LEDGER / 问题台账</p>
           <h1>问题流转与批量处理</h1>
-          <p className="muted">筛选条件可复用；选择多条问题后可合并同根因项或批量指派。</p>
+          <p className="muted">台账状态只由发布批次重放或复测提交推进，所有视图读取同一修订结果；筛选条件可复用。</p>
         </div>
         <Space>
-          <Button icon={<MergeCellsOutlined />} disabled={selectedKeys.length < 2} onClick={() => setMergeOpen(true)}>合并重复问题</Button>
+          <Button icon={<MergeCellsOutlined />} disabled={selectedKeys.length < 2 || mergeMutation.isPending} onClick={() => setMergeOpen(true)}>合并重复问题</Button>
           <Button type="primary" icon={<TeamOutlined />} disabled={!selectedKeys.length} onClick={() => setAssignOpen(true)}>批量分配</Button>
         </Space>
       </div>
@@ -115,9 +125,10 @@ export default function IssuesPage() {
             rowKey="key"
             columns={columns}
             dataSource={data}
+            loading={issuesQuery.isLoading}
             pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (total) => `共 ${total} 条` }}
             rowSelection={{ selectedRowKeys: selectedKeys, onChange: (keys) => setSelectedKeys(keys as string[]) }}
-            scroll={{ x: 1250 }}
+            scroll={{ x: 1320 }}
           />
         </div>
       </div>
@@ -125,7 +136,7 @@ export default function IssuesPage() {
       <Drawer title={detail ? `${detail.key} · ${detail.title}` : ''} open={Boolean(detail)} onClose={() => setDetail(null)} width={560}>
         {detail && (
           <Space direction="vertical" size={18} style={{ width: '100%' }}>
-            <Space wrap><Tag color={impactColor[detail.impact]}>{detail.impact}</Tag><Tag>{detail.priority}</Tag><Tag color={statusColor[detail.status]}>{detail.status}</Tag></Space>
+            <Space wrap><Tag color={impactColor[detail.impact]}>{detail.impact}</Tag><Tag>{detail.priority}</Tag><Tag color={statusColor[detail.status]}>{detail.status}</Tag><Tag color="blue">修订 r{detail.revision}</Tag></Space>
             <dl className="detail-list">
               <dt>站点版本</dt><dd>{detail.site} / {detail.version}</dd>
               <dt>WCAG</dt><dd>{detail.wcag.join('、')}</dd>
@@ -136,6 +147,7 @@ export default function IssuesPage() {
               <dt>关联重复</dt><dd>{detail.mergedKeys.length ? detail.mergedKeys.join('、') : '无'}</dd>
               <dt>修复说明</dt><dd>{detail.fixNote ?? '开发尚未提交'}</dd>
               <dt>复测环境</dt><dd>{detail.retestEnv ?? '待开发提交'}</dd>
+              <dt>最近批次</dt><dd>{detail.lastBatchId ?? '无'}</dd>
             </dl>
             <div>
               <Typography.Title level={5}>操作历史</Typography.Title>
@@ -147,11 +159,17 @@ export default function IssuesPage() {
 
       <Modal title="批量分配整改项" open={assignOpen} onCancel={() => setAssignOpen(false)} onOk={() => form.submit()} okText="确认分配">
         <Form form={form} layout="vertical" onFinish={async (values) => {
-          await axios.post('/api/issues/bulk-assign', { keys: selectedKeys, ...values, dueDate: values.dueDate.format('YYYY-MM-DD') })
-          message.success(`已分配 ${selectedKeys.length} 条问题`)
-          setSelectedKeys([])
-          setAssignOpen(false)
-          window.location.reload()
+          try {
+            await axios.post('/api/issues/bulk-assign', { keys: selectedKeys, ...values, dueDate: values.dueDate.format('YYYY-MM-DD') })
+            message.success(`已分配 ${selectedKeys.length} 条问题，修订号已推进`)
+            setSelectedKeys([])
+            setAssignOpen(false)
+            form.resetFields()
+            queryClient.invalidateQueries({ queryKey: issuesQueryKey })
+            queryClient.invalidateQueries({ queryKey: ['version-diffs'] })
+          } catch {
+            message.error('批量分配失败，选择已保留，请重试')
+          }
         }}>
           <Form.Item name="team" label="目标团队" rules={[{ required: true }]}><Select options={['前端基础组件组', '结算体验组', '数据可视化组', '供应链前端组'].map((value) => ({ value }))} /></Form.Item>
           <Form.Item name="owner" label="负责人" rules={[{ required: true }]}><Input placeholder="输入负责人姓名" /></Form.Item>
@@ -162,10 +180,35 @@ export default function IssuesPage() {
         </Form>
       </Modal>
 
-      <Modal title="合并为同一整改项" open={mergeOpen} onCancel={() => setMergeOpen(false)} onOk={() => { mergeIssues(selectedKeys); setMergeOpen(false); message.success('问题已按根因合并，子项仍可追溯') }} okText="确认合并">
-        <Typography.Paragraph>将以 <Typography.Text code>{selectedKeys[0]}</Typography.Text> 为主问题，其余 {selectedKeys.length - 1} 项保留历史并关联到该主问题。</Typography.Paragraph>
+      <Modal
+        title="合并为同一整改项"
+        open={mergeOpen}
+        onCancel={() => setMergeOpen(false)}
+        onOk={async () => {
+          try {
+            await mergeMutation.mutateAsync(selectedKeys)
+            message.success('问题已按根因合并，子项仍可追溯')
+            setMergeOpen(false)
+            setSelectedKeys([])
+            queryClient.invalidateQueries({ queryKey: ['version-diffs'] })
+          } catch {
+            message.error('合并失败，选择已保留，请重试')
+          }
+        }}
+        okText="确认合并"
+        confirmLoading={mergeMutation.isPending}
+      >
+        <Typography.Paragraph>将以 <Typography.Text code>{selectedKeys[0]}</Typography.Text> 为主问题，其余 {selectedKeys.length - 1} 项保留历史并关联到该主问题；合并会推进相关问题的修订号，已暂存批次发布时会识别到差异。</Typography.Paragraph>
         <Space wrap>{selectedKeys.map((key) => <Tag key={key}>{key}</Tag>)}</Space>
       </Modal>
     </section>
+  )
+}
+
+function TooltipRevision({ revision, batchId }: { revision: number; batchId?: string }) {
+  return (
+    <Typography.Text title={batchId ? `最近发布批次：${batchId}` : undefined} style={{ fontVariantNumeric: 'tabular-nums' }}>
+      r{revision}
+    </Typography.Text>
   )
 }
