@@ -1,0 +1,67 @@
+:root {
+  font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+  color: #20313a;
+  background: #f2f5f6;
+  font-synthesis: none;
+}
+
+* { box-sizing: border-box; }
+html, body, #root { min-height: 100%; margin: 0; }
+body { min-width: 320px; }
+
+.page { padding: 22px; }
+.page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
+.page-head h1 { margin: 3px 0 4px; font-size: clamp(22px, 3vw, 30px); }
+.eyebrow { margin: 0; color: #6e7c84; font-size: 11px; font-weight: 800; letter-spacing: .13em; }
+.muted { color: #74818a; }
+.panel { border: 1px solid #dfe5e8; border-radius: 10px; background: #fff; box-shadow: 0 8px 22px rgba(28,57,70,.05); }
+.panel-head { display: flex; min-height: 50px; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 16px; border-bottom: 1px solid #e7ecee; }
+.panel-head h3 { margin: 0; font-size: 15px; }
+
+.shell { min-height: 100vh; }
+.desktop-sider { background: #15313d !important; }
+.sidebar-inner { min-height: 100vh; color: #e8f0f2; background: #15313d; }
+.brand { display: flex; align-items: center; gap: 11px; padding: 20px 16px; border-bottom: 1px solid rgba(255,255,255,.1); }
+.brand-mark { display: grid; width: 42px; height: 42px; place-items: center; border: 1px solid #5fa7b0; border-radius: 9px; color: #a6dce0; font-size: 20px; }
+.brand strong, .brand small { display: block; }
+.brand strong { font-size: 14px; }
+.brand small { margin-top: 4px; color: #91a8b2; font-size: 10px; }
+.sidebar-inner .ant-menu { padding: 15px 10px; background: transparent; border: 0; }
+.sidebar-inner .ant-menu-item { border-radius: 7px; }
+.sidebar-inner .ant-menu-item-selected { background: #235260 !important; box-shadow: inset 3px 0 #66bac1; }
+.sync-card { position: absolute; right: 12px; bottom: 14px; left: 12px; display: grid; gap: 5px; padding: 12px; border: 1px solid rgba(255,255,255,.1); border-radius: 8px; background: rgba(255,255,255,.04); }
+.sync-card strong { font-size: 12px; }
+.sync-card span { color: #91a7b1; font-size: 10px; }
+.mobile-header { display: none; background: #15313d; }
+
+.metric-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 14px; }
+.metric-card { padding: 16px; border: 1px solid #dfe5e8; border-radius: 10px; background: white; }
+.metric-card span, .metric-card small { display: block; color: #728089; font-size: 12px; }
+.metric-card strong { display: block; margin: 7px 0; color: #173b49; font-size: 28px; }
+.toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 9px; margin-bottom: 12px; padding: 12px; }
+.toolbar .spacer { flex: 1; }
+.saved-filters { display: flex; flex-wrap: wrap; gap: 7px; padding: 10px 14px; border-bottom: 1px solid #e7ecee; }
+.table-wrap { overflow-x: auto; }
+.root-cause { max-width: 210px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.detail-list { display: grid; grid-template-columns: 86px 1fr; gap: 10px; font-size: 12px; }
+.detail-list dt { color: #74818a; }
+.detail-list dd { margin: 0; line-height: 1.6; }
+.timeline-item { padding: 0 0 16px 14px; border-left: 2px solid #cbd8dc; position: relative; }
+.timeline-item:before { content: ""; position: absolute; left: -5px; top: 2px; width: 8px; height: 8px; border-radius: 50%; background: #277984; box-shadow: 0 0 0 3px white; }
+.review-grid, .report-grid { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 14px; align-items: start; }
+.review-box { padding: 16px; }
+.report-sheet { padding: 24px; }
+.report-sheet h2 { margin: 0 0 4px; }
+.report-sheet table { width: 100%; margin-top: 18px; border-collapse: collapse; font-size: 12px; }
+.report-sheet th, .report-sheet td { padding: 9px; border: 1px solid #dbe2e5; text-align: left; }
+.report-sheet th { background: #edf3f4; }
+
+@media (max-width: 760px) {
+  .page { padding: 12px; }
+  .page-head { align-items: flex-start; flex-direction: column; }
+  .desktop-sider { display: none; }
+  .mobile-header { display: flex; align-items: center; gap: 8px; color: white; }
+  .mobile-header .ant-typography { color: white; }
+  .metric-grid { grid-template-columns: 1fr 1fr; }
+  .review-grid, .report-grid { grid-template-columns: 1fr; }
+}
